@@ -1,7 +1,7 @@
 flask
 requests
-pymongo==2.7.2
-mongoengine
+pymongo>=4.0,<5
+mongoengine>=0.27.0
 pytz
 gunicorn
 raven[flask]
