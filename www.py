@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
+
 from flask import Flask, redirect, request, render_template, jsonify
 from models import User
 from timetable import TimetableResolver
@@ -78,4 +81,4 @@ def index():
     return redirect('https://apps.getpebble.com/applications/53ab84141d576ea3c30000d6')
 
 if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0")
+    app.run(debug=True, host="0.0.0.0", port=8080)

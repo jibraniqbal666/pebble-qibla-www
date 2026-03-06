@@ -77,7 +77,7 @@ class Timeline:
     def _delete_time_pin(user, prayer, date):
         session = Timeline.executor_http_sessions[threading.current_thread().ident]
         pin_id = "%s:%s:%s" % (user.user_token, date, prayer)
-        res = session.delete("https://timeline-api.getpebble.com/v1/user/pins/%s" % pin_id,
+        res = session.delete("https://timeline-api.rebble.io/v1/user/pins/%s" % pin_id,
                            headers={"X-User-Token": user.timeline_token, "Content-Type": "application/json"})
         if res.status_code == 410:
             # They've uninstalled the app
@@ -90,7 +90,7 @@ class Timeline:
         session = Timeline.executor_http_sessions[threading.current_thread().ident]
         pin_data = Timeline._generate_pin(user, geoname_option, prayer, date, timestamp)
         print(str(pin_data).encode("utf-8"))
-        res = session.put("https://timeline-api.getpebble.com/v1/user/pins/%s" % pin_data["id"],
+        res = session.put("https://timeline-api.rebble.io/v1/user/pins/%s" % pin_data["id"],
                            data=json.dumps(pin_data),
                            headers={"X-User-Token": user.timeline_token, "Content-Type": "application/json"})
         if res.status_code == 410:
