@@ -1,3 +1,4 @@
+import os
 from flask import Flask, redirect, request, render_template, jsonify
 from models import User
 from timetable import TimetableResolver
@@ -5,11 +6,12 @@ from timeline import Timeline
 from datetime import datetime
 import logging
 import json
-from raven.contrib.flask import Sentry
 
 app = Flask(__name__)
 
-sentry = Sentry(app, logging=True, level=logging.ERROR)
+if os.environ.get('SENTRY_DSN'):
+    from raven.contrib.flask import Sentry
+    Sentry(app, logging=True, level=logging.ERROR)
 
 @app.route('/settings/<user_token>',  methods=["GET", "POST"])
 def settings(user_token):
