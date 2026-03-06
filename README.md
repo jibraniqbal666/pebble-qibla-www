@@ -16,5 +16,8 @@ If you forked this and don’t have the original setup:
 3. **Sentry** (optional)  
    For error tracking, create a project at [sentry.io](https://sentry.io) and set **`SENTRY_DSN`**. If unset, the app runs without Sentry.
 
-4. **Cron**  
+4. **London timetable** (optional)  
+   The “London” prayer-time method uses [londonprayertimes.com](http://www.londonprayertimes.com/api/times/). Set **`LONDON_UNIFIED_KEY`** if you need it; otherwise leave unset (the app still runs; London API calls will fail if used).
+
+5. **Cron**  
    Prayer timeline pins are pushed by `cron.py`. Run it on a schedule (e.g. [cron-job.org](https://cron-job.org) calling an endpoint you add, or a separate worker/cron service) with the same `MONGOLAB_URI` (and any other env) set.

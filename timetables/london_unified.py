@@ -1,6 +1,8 @@
+import os
 from .base import Timetable
-from keys import LONDON_UNIFIED_KEY
 from datetime import datetime
+
+LONDON_UNIFIED_KEY = os.environ.get("LONDON_UNIFIED_KEY", "")
 from pytz import timezone, utc
 import requests
 
@@ -24,6 +26,8 @@ class LondonUnified(Timetable):
 
     @classmethod
     def Times(cls, location, date):
+        if not LONDON_UNIFIED_KEY:
+            return ()
         params = {
             "key": LONDON_UNIFIED_KEY,
             "format": "json",
