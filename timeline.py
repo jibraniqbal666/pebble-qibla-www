@@ -8,6 +8,19 @@ import pytz
 import json
 
 
+def _timeline_time(timestamp):
+    """Format datetime for Rebble Timeline API: ISO 8601 with Z suffix and millisecond precision."""
+    s = timestamp.isoformat()
+    if s.endswith("+00:00"):
+        s = s[:-6] + "Z"
+    elif "+00:00" in s:
+        s = s.replace("+00:00", "Z")
+    # API expects milliseconds; truncate microseconds to 3 digits
+    if "." in s and len(s) > s.index(".") + 4:
+        s = s[: s.index(".") + 4] + ("Z" if s.endswith("Z") else "")
+    return s
+
+
 class Timeline:
     PRAYER_NAMES =  {
         "standard": {
@@ -89,10 +102,9 @@ class Timeline:
     def _push_time_pin(user, geoname_option, prayer, date, timestamp):
         session = Timeline.executor_http_sessions[threading.current_thread().ident]
         pin_data = Timeline._generate_pin(user, geoname_option, prayer, date, timestamp)
-        print(str(pin_data).encode("utf-8"))
         res = session.put("https://timeline-api.rebble.io/v1/user/pins/%s" % pin_data["id"],
-                           data=json.dumps(pin_data),
-                           headers={"X-User-Token": user.timeline_token, "Content-Type": "application/json"})
+                           json=pin_data,
+                           headers={"X-User-Token": user.timeline_token})
         if res.status_code == 410:
             # They've uninstalled the app
             user.timeline_token = None
@@ -104,9 +116,10 @@ class Timeline:
         pin_id = "%s:%s:%s" % (user.user_token, date, prayer)
         prayer_name = Timeline.PRAYER_NAMES[user.config["prayer_names"]][prayer]
         geoname = (geoname_option if geoname_option else user.location_geoname)
+        time_str = _timeline_time(timestamp)
         return {
             "id": pin_id,
-            "time": timestamp.isoformat(),
+            "time": time_str,
             "layout": {
                 "type": "genericPin",
                 "title": prayer_name,
@@ -122,7 +135,7 @@ class Timeline:
             ],
             "reminders": [
                 {
-                  "time": timestamp.isoformat(),
+                  "time": time_str,
                   "layout": {
                     "type": "genericReminder",
                     "title": prayer_name,
