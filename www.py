@@ -6,7 +6,7 @@ from flask import Flask, redirect, request, render_template, jsonify
 from models import User
 from timetable import TimetableResolver
 from timeline import Timeline
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import logging
 import json
 
@@ -33,6 +33,35 @@ def subscribe():
 
     result = {"location_geoname": user.location_geoname}
     return jsonify(result)
+
+
+@app.route('/timeline/<user_token>', methods=["GET"])
+def timeline_pins(user_token):
+    """Return prayer-time pins for the user (adhoc fetch; no timeline-api push)."""
+    try:
+        user = User.objects.get(user_token=user_token)
+    except User.DoesNotExist:
+        return jsonify({"error": "user not found"}), 404
+    start_date = request.args.get("start")
+    end_date = request.args.get("end")
+    if start_date:
+        try:
+            start_date = date.fromisoformat(start_date)
+        except ValueError:
+            return jsonify({"error": "invalid start date (use YYYY-MM-DD)"}), 400
+    else:
+        start_date = date.today() - timedelta(days=1)
+    if end_date:
+        try:
+            end_date = date.fromisoformat(end_date)
+        except ValueError:
+            return jsonify({"error": "invalid end date (use YYYY-MM-DD)"}), 400
+    else:
+        end_date = date.today() + timedelta(days=3)
+    if start_date > end_date:
+        return jsonify({"error": "start must be before end"}), 400
+    pins = Timeline.get_pins_for_user(user, start_date=start_date, end_date=end_date)
+    return jsonify({"pins": pins})
 
 
 @app.route('/settings/<user_token>',  methods=["GET", "POST"])

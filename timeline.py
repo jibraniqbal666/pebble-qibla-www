@@ -54,6 +54,31 @@ class Timeline:
     # I'm not sure if the ThreadPoolExecutor ever shuts down threads, meaning we might need to trim this dict.
     executor_http_sessions = defaultdict(lambda: requests.Session())
 
+    def get_pins_for_user(user, start_date=None, end_date=None):
+        """Return list of pin dicts for the user over a date range (for adhoc fetch)."""
+        if start_date is None:
+            start_date = date.today()
+        if end_date is None:
+            end_date = date.today() + timedelta(days=3)
+        pins = []
+        loc = user.location
+        if hasattr(loc, "keys"):
+            loc = loc["coordinates"]
+        loc = loc[::-1]  # From the database, it's lon/lat
+        d = start_date
+        while d <= end_date:
+            geoname_option, times = TimetableResolver.Resolve(
+                user.config["method"], user.config, loc, d
+            )
+            for key in Timeline.TIMES_TO_PUSH:
+                ts = datetime.combine(d, time()).replace(tzinfo=pytz.utc) + timedelta(
+                    hours=times[key]
+                )
+                pin_data = Timeline._generate_pin(user, geoname_option, key, d, ts)
+                pins.append(pin_data)
+            d += timedelta(days=1)
+        return pins
+
     def push_pins_for_user(user, sync=False, clear=True):
         if not user.timeline_token:
             # They're not timeline-enabled
