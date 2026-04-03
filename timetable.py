@@ -41,10 +41,12 @@ class TimetableResolver:
             query_cache_key = buildCacheKey(location, date)
             if query_cache_key in TimetableResolver._cache:
                 return TimetableResolver._cache[query_cache_key]
-            try:
-                cache_obj = TimetableCachedTimes.objects.get(key=query_cache_key)
+            # Use .first() instead of .get(): PyMongo/MongoEngine .get() can raise StopIteration on
+            # Python 3.11+ when no document matches, which breaks exception handling.
+            cache_obj = TimetableCachedTimes.objects(key=query_cache_key).first()
+            if cache_obj is not None:
                 TimetableResolver._cache[query_cache_key] = (cache_obj.location_geoname, cache_obj.times)
-            except TimetableCachedTimes.DoesNotExist:
+            else:
                 multi_day_times = resolver.Times(location, date)
                 # The resolver returns a list of (location, date, timedict) tuples.
                 # Obviously the location shouldn't ever change over a range, but oh well, we're storing it discretely anyway.

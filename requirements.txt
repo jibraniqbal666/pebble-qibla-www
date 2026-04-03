@@ -1,4 +1,5 @@
 flask
+structlog>=24,<26
 python-dotenv
 requests
 pymongo>=4.0,<5
