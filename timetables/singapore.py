@@ -3,8 +3,18 @@ import datetime
 from pytz import timezone, utc
 import requests
 from PyPDF2 import PdfReader
+from PyPDF2.errors import PdfReadError
 import re
 import io
+
+# Many CDNs (e.g. CloudFront in front of isomer) return 403 HTML for the default python-requests UA.
+_PDF_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (compatible; PebbleQibla/1.0;"
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    ),
+    "Accept": "application/pdf,application/octet-stream;q=0.9,*/*;q=0.8",
+}
 
 timetable_pdfs = {
     2016: "http://www.muis.gov.sg/documents/Resource_Centre/Prayer_Timetable_2016.pdf",
@@ -31,8 +41,17 @@ class Singapore(Timetable):
 
     @classmethod
     def Times(cls, location, date):
-        time_table_pdf_req = requests.get(timetable_pdfs[date.year])
-        time_table_pdf = PdfReader(io.BytesIO(time_table_pdf_req.content))
+        url = timetable_pdfs[date.year]
+        time_table_pdf_req = requests.get(url, headers=_PDF_HEADERS, timeout=90)
+        time_table_pdf_req.raise_for_status()
+        raw = time_table_pdf_req.content
+        try:
+            time_table_pdf = PdfReader(io.BytesIO(raw), strict=False)
+        except PdfReadError as e:
+            raise RuntimeError(
+                "Singapore timetable PDF could not be read (year=%s url=%s): %s"
+                % (date.year, url, e)
+            ) from e
         results = []
         for page in time_table_pdf.pages:
             text = page.extract_text()
