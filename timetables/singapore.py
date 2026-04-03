@@ -2,7 +2,7 @@ from .base import Timetable
 import datetime
 from pytz import timezone, utc
 import requests
-import PyPDF2
+from PyPDF2 import PdfReader
 import re
 import io
 
@@ -32,10 +32,10 @@ class Singapore(Timetable):
     @classmethod
     def Times(cls, location, date):
         time_table_pdf_req = requests.get(timetable_pdfs[date.year])
-        time_table_pdf = PyPDF2.PdfFileReader(io.BytesIO(time_table_pdf_req.content))
+        time_table_pdf = PdfReader(io.BytesIO(time_table_pdf_req.content))
         results = []
         for page in time_table_pdf.pages:
-            text = page.extractText()
+            text = page.extract_text()
             for time_row in re.finditer(r"(?P<date>\d+\n?/\n?\d+\n?/\n?\d{4})\s+\w+\s+(?P<fajr>\d{1,2}\s+\d\n?\d)\s+(?P<sunrise>\d{1,2}\s+\d\n?\d)\s+(?P<dhuhr>\d{1,2}\s+\d\n?\d)\s+(?P<asr>\d{1,2}\s+\d\n?\d)\s+(?P<magrib>\d{1,2}\s+\d\n?\d)\s+(?P<isha>\d{1,2}\s+\d\n?\d)", text):
                 date_parts = list(int(x.strip()) for x in time_row.group("date").split("/"))
                 date = datetime.date(day=date_parts[0], month=date_parts[1], year=date_parts[2])

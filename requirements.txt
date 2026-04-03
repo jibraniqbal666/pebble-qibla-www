@@ -7,4 +7,4 @@ mongoengine>=0.27.0
 pytz
 gunicorn
 raven[flask]
-pypdf2
+pypdf2>=3.0.0
