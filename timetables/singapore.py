@@ -9,7 +9,8 @@ import io
 timetable_pdfs = {
     2016: "http://www.muis.gov.sg/documents/Resource_Centre/Prayer_Timetable_2016.pdf",
     2017: "http://www.muis.gov.sg/documents/Resource_Centre/Prayer%20Timetable%202017.pdf",
-    2018: "https://www.muis.gov.sg/-/media/Files/Corporate-Site/Prayer-Timetable-2018.pdf"
+    2018: "https://www.muis.gov.sg/-/media/Files/Corporate-Site/Prayer-Timetable-2018.pdf",
+    2026: "https://isomer-user-content.by.gov.sg/48/f989baef-c5eb-440e-b3bb-874626a0664e/Prayer%20timetable%202026.pdf"
 }
 
 class Singapore(Timetable):
