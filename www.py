@@ -12,7 +12,7 @@ import structlog
 from flask import Flask, redirect, request, render_template, jsonify
 from models import User
 from timetable import TimetableResolver
-from timeline import Timeline
+from timeline import Timeline, LocationNotAvailable
 from datetime import datetime, date, timedelta
 import json
 
@@ -66,7 +66,10 @@ def timeline_pins(user_token):
         end_date = date.today() + timedelta(days=3)
     if start_date > end_date:
         return jsonify({"error": "start must be before end"}), 400
-    pins = Timeline.get_pins_for_user(user, start_date=start_date, end_date=end_date)
+    try:
+        pins = Timeline.get_pins_for_user(user, start_date=start_date, end_date=end_date)
+    except LocationNotAvailable:
+        return jsonify({"error": "location not available"}), 400
     return jsonify({"pins": pins})
 
 
