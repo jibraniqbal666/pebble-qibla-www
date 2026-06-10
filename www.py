@@ -36,7 +36,6 @@ def subscribe():
     user.subscribed_at = datetime.utcnow()
     user.geocode()
     user.save()
-    Timeline.push_pins_for_user(user)
 
     result = {"location_geoname": user.location_geoname}
     return jsonify(result)
@@ -82,17 +81,11 @@ def settings(user_token):
     if not user.location_geoname:
         return render_template('registration_wait.html')
 
-    if not user.timeline_token:
-        return render_template('no_timeline.html')
-
     if request.method == "POST":
-        old_config = dict(user.config)
         user.config["method"] = request.form["method"]
         user.config["asr"] = request.form["asr"]
         user.config["prayer_names"] = request.form["prayer_names"]
         user.save()
-        if old_config != user.config:
-            Timeline.push_pins_for_user(user)
         return render_template('settings_confirmed.html')
 
     # Allow calculation method to override geocoded name, where applicable
