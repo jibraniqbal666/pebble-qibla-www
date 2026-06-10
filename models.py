@@ -1,5 +1,9 @@
 import mongoengine as me
 import os
+import structlog
+
+log = structlog.get_logger(__name__)
+
 
 class User(me.Document):
     DEFAULT_CONFIG = {
@@ -23,7 +27,10 @@ class User(me.Document):
     def geocode(self):
         import requests
         res = requests.get('http://api.geonames.org/findNearbyPlaceNameJSON', params={'lat': self.location[1], 'lng': self.location[0], 'cities': 'cities1000', 'maxRows': 1, 'username': os.environ.get('GEONAMES_USERNAME', 'demo')})
-        for place in res.json()["geonames"]:
+        if not res.ok:
+            log.warning("geocode_failed", user_token=self.user_token, status_code=res.status_code)
+            return
+        for place in res.json().get("geonames", []):
             self.location_geoname = place["name"]
 
     @property
