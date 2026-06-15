@@ -8,6 +8,22 @@ import pytz
 import json
 
 
+class LocationNotAvailable(Exception):
+    pass
+
+
+def _user_lat_lon(user):
+    """Return [lat, lon] from the user's stored location, or None if unavailable."""
+    loc = user.location
+    if not loc:
+        return None
+    if hasattr(loc, "keys"):
+        loc = loc.get("coordinates")
+    if not loc or len(loc) < 2:
+        return None
+    return loc[::-1]  # From the database, it's lon/lat
+
+
 def _timeline_time(timestamp):
     """Format datetime for Rebble Timeline API: ISO 8601 with Z suffix and millisecond precision."""
     s = timestamp.isoformat()
@@ -61,10 +77,9 @@ class Timeline:
         if end_date is None:
             end_date = date.today() + timedelta(days=3)
         pins = []
-        loc = user.location
-        if hasattr(loc, "keys"):
-            loc = loc["coordinates"]
-        loc = loc[::-1]  # From the database, it's lon/lat
+        loc = _user_lat_lon(user)
+        if loc is None:
+            raise LocationNotAvailable()
         d = start_date
         while d <= end_date:
             geoname_option, times = TimetableResolver.Resolve(
@@ -100,10 +115,9 @@ class Timeline:
             return pending_pins
 
     def _push_pins_for_date(user, date):
-        loc = user.location
-        if hasattr(loc, "keys"):
-            loc = loc['coordinates']
-        loc = loc[::-1] # From the database, it's lon/lat
+        loc = _user_lat_lon(user)
+        if loc is None:
+            return
         geoname_option, times = TimetableResolver.Resolve(user.config["method"], user.config, loc, date)
         for key in Timeline.TIMES_TO_PUSH:
             yield Timeline.executor.submit(Timeline._push_time_pin, user, geoname_option, key, date, datetime.combine(date, time()).replace(tzinfo=pytz.utc) + timedelta(hours=times[key]))
