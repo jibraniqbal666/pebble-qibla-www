@@ -56,10 +56,10 @@ class Malaysia(Timetable):
         resp.raise_for_status()
         payload = resp.json()
         if payload.get("status") != "OK!":
-            raise RuntimeError("e-solat API: %s" % payload.get("status", "unknown"))
+            raise RuntimeError("e-solat API: %s, zone=%s, year=%s, month=%s" % (payload.get("status", "unknown"), zone.Code, date.year, date.month))
         rows = payload.get("prayerTime")
         if not isinstance(rows, list):
-            raise RuntimeError("e-solat API: unexpected response")
+            raise RuntimeError("e-solat API: unexpected response, zone=%s, year=%s, month=%s" % zone.Code, date.year, date.month)
         results = []
         for row in rows:
             this_date = datetime.strptime(row["date"], "%d-%b-%Y").date()
