@@ -107,6 +107,11 @@ def settings(user_token):
     prayer_name_options = {k: ", ".join([v[p] for p in ["fajr", "dhuhr", "asr", "maghrib", "isha"]]) for k,v in sorted(list(Timeline.PRAYER_NAMES.items()), key=lambda i: i[0] == "standard")}
     return render_template('settings.html', user=user, location_geoname=location_geoname, asr_options=asr_options, method_options=method_options, asr_setting_availability=asr_setting_availability, prayer_name_options=prayer_name_options)
 
+@app.route('/favicon.ico')
+def favicon():
+    return redirect('/static/img/kaaba.svg')
+
+
 @app.route('/')
 def index():
     return "marhaba!"
