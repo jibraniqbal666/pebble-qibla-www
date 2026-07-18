@@ -26,12 +26,52 @@ class User(me.Document):
 
     def geocode(self):
         import requests
-        res = requests.get('http://api.geonames.org/findNearbyPlaceNameJSON', params={'lat': self.location[1], 'lng': self.location[0], 'cities': 'cities1000', 'maxRows': 1, 'username': os.environ.get('GEONAMES_USERNAME', 'demo')})
+
+        loc = self.location
+        if hasattr(loc, "keys"):
+            loc = loc.get("coordinates")
+        if not loc or len(loc) < 2:
+            log.warning("geocode_skipped_no_location", user_token=self.user_token)
+            return
+
+        lon, lat = float(loc[0]), float(loc[1])
+        username = os.environ.get("GEONAMES_USERNAME", "demo")
+        try:
+            res = requests.get(
+                "https://secure.geonames.org/findNearbyPlaceNameJSON",
+                params={
+                    "lat": lat,
+                    "lng": lon,
+                    "cities": "cities1000",
+                    "maxRows": 1,
+                    "username": username,
+                },
+                timeout=5,
+            )
+        except requests.RequestException as exc:
+            log.warning("geocode_request_failed", user_token=self.user_token, error=str(exc))
+            if not self.location_geoname:
+                self.location_geoname = "%.2f, %.2f" % (lat, lon)
+            return
+
         if not res.ok:
             log.warning("geocode_failed", user_token=self.user_token, status_code=res.status_code)
+            if not self.location_geoname:
+                self.location_geoname = "%.2f, %.2f" % (lat, lon)
             return
-        for place in res.json().get("geonames", []):
-            self.location_geoname = place["name"]
+
+        try:
+            places = res.json().get("geonames") or []
+        except ValueError as exc:
+            log.warning("geocode_bad_json", user_token=self.user_token, error=str(exc))
+            if not self.location_geoname:
+                self.location_geoname = "%.2f, %.2f" % (lat, lon)
+            return
+
+        if places:
+            self.location_geoname = places[0]["name"]
+        elif not self.location_geoname:
+            self.location_geoname = "%.2f, %.2f" % (lat, lon)
 
     @property
     def config(self):
