@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import os
 
-from flask import Response
+from flask import Response, request
 from opentelemetry import metrics
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.resources import Resource
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from werkzeug.exceptions import NotFound, Unauthorized
 
 _meter: metrics.Meter | None = None
 _subscribe_counter = None
@@ -85,6 +86,17 @@ def metrics_response() -> Response:
     return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 
+def _authorize_metrics() -> None:
+    """Require Bearer token from METRICS_TOKEN. Disabled (404) when unset."""
+    expected = os.environ.get("METRICS_TOKEN")
+    if not expected:
+        raise NotFound()
+    auth = request.headers.get("Authorization", "")
+    if auth == f"Bearer {expected}":
+        return
+    raise Unauthorized(www_authenticate='Bearer realm="metrics"')
+
+
 def init_metrics(app) -> None:
     """Configure MeterProvider, Flask instrumentation, and /metrics route."""
     global _initialized, _meter
@@ -107,6 +119,7 @@ def init_metrics(app) -> None:
 
     @app.route("/metrics")
     def prometheus_metrics():
+        _authorize_metrics()
         return metrics_response()
 
     _initialized = True
