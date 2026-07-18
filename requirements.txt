@@ -8,3 +8,8 @@ pytz
 gunicorn
 raven[flask]
 pypdf2>=3.0.0
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-exporter-prometheus
+opentelemetry-instrumentation-flask
+prometheus-client

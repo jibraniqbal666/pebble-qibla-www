@@ -1,1 +1,1 @@
-web: gunicorn -w 4 -b 0.0.0.0:$PORT www:app
+web: gunicorn -c gunicorn.conf.py -w 4 -b 0.0.0.0:$PORT www:app

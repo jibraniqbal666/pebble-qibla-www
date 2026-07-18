@@ -3,6 +3,7 @@ from timetables.london_unified import LondonUnified
 from timetables.malaysia import Malaysia
 from timetables.singapore import Singapore
 from models import TimetableCachedTimes
+from otel_metrics import record_timetable_cache
 import datetime
 
 class TimetableResolver:
@@ -40,13 +41,16 @@ class TimetableResolver:
             resolver = TimetableResolver._resolvers[method]
             query_cache_key = buildCacheKey(location, date)
             if query_cache_key in TimetableResolver._cache:
+                record_timetable_cache("memory", method)
                 return TimetableResolver._cache[query_cache_key]
             # Use .first() instead of .get(): PyMongo/MongoEngine .get() can raise StopIteration on
             # Python 3.11+ when no document matches, which breaks exception handling.
             cache_obj = TimetableCachedTimes.objects(key=query_cache_key).first()
             if cache_obj is not None:
+                record_timetable_cache("mongo", method)
                 TimetableResolver._cache[query_cache_key] = (cache_obj.location_geoname, cache_obj.times)
             else:
+                record_timetable_cache("miss", method)
                 multi_day_times = resolver.Times(location, date)
                 # The resolver returns a list of (location, date, timedict) tuples.
                 # Obviously the location shouldn't ever change over a range, but oh well, we're storing it discretely anyway.
@@ -56,6 +60,7 @@ class TimetableResolver:
                     TimetableCachedTimes.objects(key=day_cache_key).update(key=day_cache_key, location_geoname=location_geoname, times=times, upsert=True)
             return TimetableResolver._cache[query_cache_key]
         else:
+            record_timetable_cache("calc", method)
             pt = PrayTimes()
             pt.setMethod(method)
             pt.adjust({"asr": config["asr"]})
