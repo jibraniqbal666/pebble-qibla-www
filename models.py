@@ -26,12 +26,14 @@ class User(me.Document):
 
     def geocode(self):
         import requests
+        from otel_metrics import record_geocode
 
         loc = self.location
         if hasattr(loc, "keys"):
             loc = loc.get("coordinates")
         if not loc or len(loc) < 2:
             log.warning("geocode_skipped_no_location", user_token=self.user_token)
+            record_geocode("skipped")
             return
 
         lon, lat = float(loc[0]), float(loc[1])
@@ -52,12 +54,14 @@ class User(me.Document):
             log.warning("geocode_request_failed", user_token=self.user_token, error=str(exc))
             if not self.location_geoname:
                 self.location_geoname = "%.2f, %.2f" % (lat, lon)
+            record_geocode("failure")
             return
 
         if not res.ok:
             log.warning("geocode_failed", user_token=self.user_token, status_code=res.status_code)
             if not self.location_geoname:
                 self.location_geoname = "%.2f, %.2f" % (lat, lon)
+            record_geocode("failure")
             return
 
         try:
@@ -66,12 +70,17 @@ class User(me.Document):
             log.warning("geocode_bad_json", user_token=self.user_token, error=str(exc))
             if not self.location_geoname:
                 self.location_geoname = "%.2f, %.2f" % (lat, lon)
+            record_geocode("failure")
             return
 
         if places:
             self.location_geoname = places[0]["name"]
+            record_geocode("success")
         elif not self.location_geoname:
             self.location_geoname = "%.2f, %.2f" % (lat, lon)
+            record_geocode("failure")
+        else:
+            record_geocode("failure")
 
     @property
     def config(self):

@@ -1,4 +1,5 @@
 from timetable import TimetableResolver
+from otel_metrics import record_pins_generated
 from datetime import date, time, timedelta, datetime
 from collections import defaultdict
 import concurrent.futures
@@ -92,6 +93,7 @@ class Timeline:
                 pin_data = Timeline._generate_pin(user, geoname_option, key, d, ts)
                 pins.append(pin_data)
             d += timedelta(days=1)
+        record_pins_generated(len(pins))
         return pins
 
     def push_pins_for_user(user, sync=False, clear=True):

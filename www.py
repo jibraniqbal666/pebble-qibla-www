@@ -13,11 +13,13 @@ from flask import Flask, redirect, request, render_template, jsonify
 from models import User
 from timetable import TimetableResolver
 from timeline import Timeline, LocationNotAvailable
+from otel_metrics import init_metrics, record_subscribe
 from datetime import datetime, date, timedelta
 import json
 
 app = Flask(__name__)
 log = structlog.get_logger(__name__)
+init_metrics(app)
 
 if os.environ.get('SENTRY_DSN'):
     from raven.contrib.flask import Sentry
@@ -36,6 +38,7 @@ def subscribe():
     user.subscribed_at = datetime.utcnow()
     user.geocode()
     user.save()
+    record_subscribe()
 
     result = {"location_geoname": user.location_geoname}
     return jsonify(result)
