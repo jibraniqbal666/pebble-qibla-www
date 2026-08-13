@@ -11,6 +11,12 @@ ZONES = (Zone("SWK01", "Zon 1 - Limbang, Sundar, Terusan, Lawas", "Limbang Saraw
 TIMEZONE = timezone("Asia/Kuala_Lumpur")
 ESOLAT_API = "https://www.e-solat.gov.my/index.php"
 
+_MALAY_MONTHS = {
+    "Jan": "Jan", "Feb": "Feb", "Mac": "Mar", "Apr": "Apr",
+    "Mei": "May", "Jun": "Jun", "Julai": "Jul", "Ogos": "Aug",
+    "Sep": "Sep", "Sept": "Sep", "Okt": "Oct", "Nov": "Nov", "Dis": "Dec",
+}
+
 
 class Malaysia(Timetable):
     @classmethod
@@ -62,7 +68,12 @@ class Malaysia(Timetable):
             raise RuntimeError("e-solat API: unexpected response, zone=%s, year=%s, month=%s" % zone.Code, date.year, date.month)
         results = []
         for row in rows:
-            this_date = datetime.strptime(row["date"], "%d-%b-%Y").date()
+            raw_date = row["date"]
+            parts = raw_date.split("-")
+            if len(parts) == 3:
+                parts[1] = _MALAY_MONTHS.get(parts[1], parts[1])
+                raw_date = "-".join(parts)
+            this_date = datetime.strptime(raw_date, "%d-%b-%Y").date()
             results.append((zone.Name, this_date, {
                         "fajr": cls._mangleTime(row["fajr"], this_date, False, False),
                         "sunrise": cls._mangleTime(row["syuruk"], this_date, False, False),
